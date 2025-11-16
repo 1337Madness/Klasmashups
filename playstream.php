@@ -1,12 +1,30 @@
 <?php
-// stream.php
-$m3uUrl = 'https://github.com/1337Madness/Klasmashups/raw/refs/heads/main/%D0%BF%D0%BB%D0%B5%D0%B9%D0%BB%D0%B8%D1%81%D1%82.m3u';
-$tracks = file($m3uUrl, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-$tracks = array_filter($tracks, function($line) {
-    return !str_starts_with(trim($line), '#');
-});
+$m3uUrl = 'https://github.com/1337Madness/Klasmashups/raw/refs/heads/main/playlist.m3u';
+if(!file_exists($m3uUrl)) {
+    header("HTTP/1.0 404 Not Found");
+    die("Playlist not found");
+}
+
+$lines = file($m3uUrl, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+$tracks = array();
+
+foreach($lines as $line) {
+    $line = trim($line);
+    if($line && !str_starts_with($line, '#')) {
+        $tracks[] = $line;
+    }
+}
+
+if(empty($tracks)) {
+    header("HTTP/1.0 404 Not Found");
+    die("No tracks in playlist");
+}
 
 $randomTrack = $tracks[array_rand($tracks)];
+
+// Отдаем как MP3 поток
 header('Content-Type: audio/mpeg');
-header('Location: ' . $randomTrack);
+header('Content-Length: ' . filesize($randomTrack));
+readfile($randomTrack);
 exit;
+?>
