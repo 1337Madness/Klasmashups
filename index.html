@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <audio id="player" controls autoplay></audio>
+    <script>
+        const player = document.getElementById('player');
+        const m3uUrl = 'playlist.m3u';
+
+        let tracks = [];
+        let playedTracks = new Set(); // Треки которые уже играли
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch(m3uUrl);
+                const text = await response.text();
+                tracks = text.split('\n')
+                    .filter(line => line.trim() && !line.startsWith('#'))
+                    .map(track => track.trim());
+                
+                if(tracks.length > 0) {
+                    playRandomTrack();
+                    
+                    player.addEventListener('ended', () => {
+                        // Если все треки проиграны - сбрасываем историю
+                        if(playedTracks.size >= tracks.length) {
+                            playedTracks.clear();
+                        }
+                        playRandomTrack();
+                    });
+                }
+            } catch(e) {
+                console.error('Ошибка загрузки плейлиста:', e);
+            }
+        }
+
+        function playRandomTrack() {
+            // Фильтруем треки которые еще не играли
+            const availableTracks = tracks.filter(track => !playedTracks.has(track));
+            
+            // Если все треки уже играли - сбрасываем
+            if(availableTracks.length === 0) {
+                playedTracks.clear();
+                availableTracks = [...tracks];
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableTracks.length);
+            const randomTrack = availableTracks[randomIndex];
+            
+            // Добавляем в проигранные
+            playedTracks.add(randomTrack);
+            
+            player.src = randomTrack;
+            player.play().catch(e => console.log('Автоплей заблокирован'));
+        }
+
+        loadPlaylist();
+    </script>
+</body>
+</html>
